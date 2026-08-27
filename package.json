@@ -2,19 +2,16 @@
   "name": "discord-getting-started",
   "private": true,
   "version": "1.0.0",
-  "description": "Discord example app",
-  "main": "app.js",
+  "description": "Discord bot that provisions private roles and channels for robotics teams",
+  "main": "bot.js",
   "type": "module",
   "engines": {
     "node": ">=18.x"
   },
   "scripts": {
-    "start": "node app.js",
-    "register": "node commands.js",
-    "dev": "nodemon app.js",
     "start": "node bot.js"
   },
-  "author": "Shay DeWael",
+  "author": "Bhuvan",
   "license": "MIT",
   "dependencies": {
     "discord-interactions": "^4.0.0",
@@ -25,5 +22,4 @@
   "devDependencies": {
     "nodemon": "^3.0.0"
   }
-
 }

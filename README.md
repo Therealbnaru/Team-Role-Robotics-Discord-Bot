@@ -1,108 +1,100 @@
-# Getting Started app for Discord
+# Robotics Team Management Discord Bot
 
-This project contains a basic rock-paper-scissors-style Discord app written in JavaScript, built for the [getting started guide](https://discord.com/developers/docs/getting-started).
+A Discord.js bot that keeps a robotics team's server organized from member nicknames. When a member's display name ends in a team identifier such as `1234A`, the bot assigns the matching role and provisions a private workspace for that team.
 
-![Demo of app](https://github.com/discord/discord-example-app/raw/main/assets/getting-started-demo.gif?raw=true)
+## Features
 
-## Project structure
-Below is a basic overview of the project structure:
+- Detects VEX-style team identifiers from display names formatted like `Name | 1234A`
+- Creates a team role when one does not already exist
+- Assigns the correct role and removes stale team-number roles
+- Creates a private category for each active team
+- Creates `general`, `building`, `notebooking`, and `programming` channels inside each category
+- Removes duplicate team categories/channels
+- Cleans up roles and categories for teams that no longer have members
+- Re-scans after member joins and nickname changes
 
-```
-├── examples    -> short, feature-specific sample apps
-│   ├── app.js  -> finished app.js code
-│   ├── button.js
-│   ├── command.js
-│   ├── modal.js
-│   ├── selectMenu.js
-├── .env.sample -> sample .env file
-├── app.js      -> main entrypoint for app
-├── commands.js -> slash command payloads + helpers
-├── game.js     -> logic specific to RPS
-├── utils.js    -> utility functions and enums
-├── package.json
-├── README.md
-└── .gitignore
-```
+## Tech stack
 
-## Running app locally
+- Node.js 18+
+- JavaScript (ES modules)
+- Discord.js 14
+- dotenv
 
-Before you start, you'll need to install [NodeJS](https://nodejs.org/en/download/) and [create a Discord app](https://discord.com/developers/applications) with the proper permissions:
-- `applications.commands`
-- `bot` (with Send Messages enabled)
+## How it works
 
+`bot.js` is the production entry point. On startup, it scans every connected server, fetches members and channels, derives active team numbers from display names, and synchronizes Discord roles and private channel categories.
 
-Configuring the app is covered in detail in the [getting started guide](https://discord.com/developers/docs/getting-started).
+A 30-second debounced scan follows member joins and display-name changes. Team channels deny `ViewChannel` to `@everyone` and grant the matching team role permission to view, post, and read message history.
 
-### Setup project
+## Setup
 
-First clone the project:
-```
-git clone https://github.com/discord/discord-example-app.git
-```
+1. Clone the repository and install dependencies:
 
-Then navigate to its directory and install dependencies:
-```
-cd discord-example-app
+```bash
+git clone https://github.com/Therealbnaru/Team-Role-Robotics-Discord-Bot.git
+cd Team-Role-Robotics-Discord-Bot
 npm install
 ```
-### Get app credentials
 
-Fetch the credentials from your app's settings and add them to a `.env` file (see `.env.sample` for an example). You'll need your app ID (`APP_ID`), bot token (`DISCORD_TOKEN`), and public key (`PUBLIC_KEY`).
+2. Create a Discord application and bot in the [Discord Developer Portal](https://discord.com/developers/applications).
 
-Fetching credentials is covered in detail in the [getting started guide](https://discord.com/developers/docs/getting-started).
+3. Enable the **Server Members Intent** for the bot. Invite it with permissions to manage roles and channels.
 
-> 🔑 Environment variables can be added to the `.env` file in Glitch or when developing locally, and in the Secrets tab in Replit (the lock icon on the left).
+4. Copy the example environment file and add the bot token:
 
-### Install slash commands
-
-The commands for the example app are set up in `commands.js`. All of the commands in the `ALL_COMMANDS` array at the bottom of `commands.js` will be installed when you run the `register` command configured in `package.json`:
-
-```
-npm run register
+```bash
+cp .env.example .env
 ```
 
-### Run the app
-
-After your credentials are added, go ahead and run the app:
-
-```
-node app.js
+```env
+DISCORD_TOKEN=your_bot_token
 ```
 
-> ⚙️ A package [like `nodemon`](https://github.com/remy/nodemon), which watches for local changes and restarts your app, may be helpful while locally developing.
+5. Start the bot:
 
-If you aren't following the [getting started guide](https://discord.com/developers/docs/getting-started), you can move the contents of `examples/app.js` (the finished `app.js` file) to the top-level `app.js`.
-
-### Set up interactivity
-
-The project needs a public endpoint where Discord can send requests. To develop and test locally, you can use something like [`ngrok`](https://ngrok.com/) to tunnel HTTP traffic.
-
-Install ngrok if you haven't already, then start listening on port `3000`:
-
-```
-ngrok http 3000
+```bash
+npm start
 ```
 
-You should see your connection open:
+## Usage
 
-```
-Tunnel Status                 online
-Version                       2.0/2.0
-Web Interface                 http://127.0.0.1:4040
-Forwarding                    https://1234-someurl.ngrok.io -> localhost:3000
+Set each robotics member's server display name so it ends with a pipe and team number:
 
-Connections                  ttl     opn     rt1     rt5     p50     p90
-                              0       0       0.00    0.00    0.00    0.00
+```text
+Bhuvan | 1234A
 ```
 
-Copy the forwarding address that starts with `https`, in this case `https://1234-someurl.ngrok.io`, then go to your [app's settings](https://discord.com/developers/applications).
+The bot will create the `1234A` role and a private `1234A` category containing the four team channels, then assign the member to that role.
 
-On the **General Information** tab, there will be an **Interactions Endpoint URL**. Paste your ngrok address there, and append `/interactions` to it (`https://1234-someurl.ngrok.io/interactions` in the example).
+## Required Discord permissions
 
-Click **Save Changes**, and your app should be ready to run 🚀
+Place the bot's role above the team roles it manages and grant it:
 
-## Other resources
-- Read **[the documentation](https://discord.com/developers/docs/intro)** for in-depth information about API features.
-- Browse the `examples/` folder in this project for smaller, feature-specific code examples
-- Join the **[Discord Developers server](https://discord.gg/discord-developers)** to ask questions about the API, attend events hosted by the Discord API team, and interact with other devs.
-- Check out **[community resources](https://discord.com/developers/docs/topics/community-resources#community-resources)** for language-specific tools maintained by community members
+- Manage Roles
+- Manage Channels
+- View Channels
+- Send Messages
+- Read Message History
+
+The privileged **Server Members Intent** must also be enabled because the bot fetches and monitors guild members.
+
+## Project structure
+
+```text
+bot.js          Main team-role and channel synchronization service
+app.js          Earlier interactions-endpoint prototype
+commands.js     Earlier slash-command registration prototype
+game.js         Prototype command game logic
+utils.js        Helpers used by the interactions prototype
+package.json    Runtime configuration and dependencies
+```
+
+The team-management workflow runs from `bot.js`; the interaction files are retained as development history and are not required by `npm start`.
+
+## Safety notes
+
+The synchronization process can create and delete Discord roles, categories, and channels whose names match the team-number pattern. Test in a development server first, confirm the bot role hierarchy, and avoid manually naming unrelated categories in the `1234A` format.
+
+## License
+
+MIT

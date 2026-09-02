@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { readFile, writeFile } from 'node:fs/promises';
+import * as readline from 'node:readline';
 import {
   Client,
   GatewayIntentBits,
@@ -16,6 +18,105 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
   ],
 });
+
+
+const ENV_FILE = new URL('.env', import.meta.url);
+
+async function promptForDiscordToken() {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    throw new Error(
+      'DISCORD_TOKEN is missing. Add it to .env when running the bot non-interactively.'
+    );
+  }
+
+  console.log('No Discord token was found. It will be saved locally in .env.');
+  process.stdout.write('Enter your Discord bot token: ');
+
+  return new Promise((resolve, reject) => {
+    const input = process.stdin;
+    const wasRaw = input.isRaw;
+
+    readline.emitKeypressEvents(input);
+    input.setRawMode(true);
+    input.resume();
+
+    let token = '';
+
+    const cleanup = () => {
+      input.off('keypress', onKeypress);
+      input.setRawMode(Boolean(wasRaw));
+      input.pause();
+    };
+
+    const onKeypress = (character, key) => {
+      if (key.ctrl && key.name === 'c') {
+        cleanup();
+        process.stdout.write('\n');
+        reject(new Error('Token setup cancelled.'));
+        return;
+      }
+
+      if (key.name === 'return' || key.name === 'enter') {
+        cleanup();
+        process.stdout.write('\n');
+        resolve(token.trim());
+        return;
+      }
+
+      if (key.name === 'backspace') {
+        token = token.slice(0, -1);
+        return;
+      }
+
+      if (character && !key.ctrl && !key.meta) {
+        token += character;
+      }
+    };
+
+    input.on('keypress', onKeypress);
+  });
+}
+
+async function saveDiscordToken(token) {
+  let envContents = '';
+
+  try {
+    envContents = await readFile(ENV_FILE, 'utf8');
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+
+  const tokenLine = `DISCORD_TOKEN=${token}`;
+
+  if (/^DISCORD_TOKEN=.*$/m.test(envContents)) {
+    envContents = envContents.replace(/^DISCORD_TOKEN=.*$/m, tokenLine);
+  } else {
+    const separator = envContents && !envContents.endsWith('\n') ? '\n' : '';
+    envContents = `${envContents}${separator}${tokenLine}\n`;
+  }
+
+  await writeFile(ENV_FILE, envContents, { mode: 0o600 });
+  process.env.DISCORD_TOKEN = token;
+}
+
+async function getDiscordToken() {
+  const savedToken = process.env.DISCORD_TOKEN?.trim();
+
+  if (savedToken) {
+    return savedToken;
+  }
+
+  const token = await promptForDiscordToken();
+
+  if (!token) {
+    throw new Error('A Discord bot token is required.');
+  }
+
+  await saveDiscordToken(token);
+  console.log('Discord token saved locally. Future starts will use it automatically.');
+
+  return token;
+}
 
 function getTeamFromName(name) {
   const match = name.match(/\|\s*(\d+[A-Za-z])$/);
@@ -315,4 +416,10 @@ client.on('guildMemberAdd', async (member) => {
   scheduleScan(member.guild);
 });
 
-client.login(process.env.DISCORD_TOKEN);
+try {
+  const discordToken = await getDiscordToken();
+  await client.login(discordToken);
+} catch (error) {
+  console.error(`Could not start the bot: ${error.message}`);
+  process.exitCode = 1;
+}

@@ -8,6 +8,7 @@ import {
 
 const TEAM_REGEX = /^\d+[A-Za-z]$/;
 const TEAM_CHANNELS = ['general', 'building', 'notebooking', 'programming'];
+const MEMBER_ROLE_NAME = 'Member 2026-2027';
 
 const client = new Client({
   intents: [
@@ -177,6 +178,9 @@ async function assignTeamRole(member) {
   }
 
   const role = await getOrCreateTeamRole(member.guild, teamNumber);
+  const memberRole = member.guild.roles.cache.find(
+    guildRole => guildRole.name.toLowerCase() === MEMBER_ROLE_NAME.toLowerCase()
+  );
 
   await removeOldTeamRoles(member, teamNumber);
   await syncTeamChannels(member.guild, role, teamNumber);
@@ -184,6 +188,13 @@ async function assignTeamRole(member) {
   if (!member.roles.cache.has(role.id)) {
     await member.roles.add(role);
     console.log(`Added ${member.displayName} to ${teamNumber}`);
+  }
+
+  if (!memberRole) {
+    console.error(`Could not find the ${MEMBER_ROLE_NAME} role in ${member.guild.name}`);
+  } else if (!member.roles.cache.has(memberRole.id)) {
+    await member.roles.add(memberRole);
+    console.log(`Added ${MEMBER_ROLE_NAME} to ${member.displayName}`);
   }
 }
 

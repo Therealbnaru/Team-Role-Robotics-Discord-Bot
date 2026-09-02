@@ -40,21 +40,15 @@ npm install
 
 3. Enable the **Server Members Intent** for the bot. Invite it with permissions to manage roles and channels.
 
-4. Copy the example environment file and add the bot token:
-
-```bash
-cp .env.example .env
-```
-
-```env
-DISCORD_TOKEN=your_bot_token
-```
-
-5. Start the bot:
+4. Start the bot:
 
 ```bash
 npm start
 ```
+
+On the first local run, the bot prompts for the Discord token without displaying it and saves it in the gitignored `.env` file. Later runs load that saved token automatically.
+
+For hosting or another non-interactive environment, set `DISCORD_TOKEN` through the host's protected environment-variable settings or create `.env` manually from `.env.example`.
 
 ## Usage
 
